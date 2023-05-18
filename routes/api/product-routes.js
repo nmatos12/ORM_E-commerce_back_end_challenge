@@ -4,22 +4,45 @@ const { Product, Category, Tag, ProductTag } = require('../../models');
 // The `/api/products` endpoint
 
 // get all products
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   // find all products
   // be sure to include its associated Category and Tag data
+  const products = await Product.findAll({
+    include: [
+      {model: Category},
+      {model: Tag}
+    ]
+  })
+  res.send(products);
 });
 
 // get one product
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   // find a single product by its `id`
   // be sure to include its associated Category and Tag data
+  const product_id = req.params.id;
+  const include_category = req.query.product_id;
+
+  if(product_id) {
+    const product = await Product.findOne({
+      include: Category,
+      where: {
+        id: product_id
+      },
+      include: [
+        {model: Category},
+        {model: Tag}
+      ]
+    })
+    res.send(product);
+  } else res.send ('Unable to find Product with associated Category and Tags')
 });
 
 // create new product
 router.post('/', (req, res) => {
   /* req.body should look like this...
     {
-      product_name: "Basketball",
+      product_name: 'Basketball',
       price: 200.00,
       stock: 3,
       tagIds: [1, 2, 3, 4]
@@ -91,6 +114,19 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   // delete one product by its `id` value
+  Product.destroy({
+    where: {
+      id: req.params.id
+    }
+  })
+  .then(ProductDeleted => {
+    console.log('Product deleted')
+    res.status(204).send();
+  })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send({ error: 'Failed to delete product' });
+  })
 });
 
 module.exports = router;
